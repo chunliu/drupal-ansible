@@ -1,0 +1,24 @@
+- name: Get public ip info
+  azure_rm_publicipaddress_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ lb_pubip_name }}"
+  register: output_pubip
+
+- name: Get loadbalancer info
+  azure_rm_loadbalancer_info:
+    resource_group: "{{ resource_group }}"
+    name: "{{ vmss_lb_name }}"
+  register: output_lb
+
+- name: Add all hosts
+  add_host:
+    groups: vmsshosts
+    hostname: "{{ output_pubip.publicipaddresses[0].ip_address }}_{{ item.properties.frontendPort }}"
+    ansible_host: "{{ output_pubip.publicipaddresses[0].ip_address }}"
+    ansible_port: "{{ item.properties.frontendPort }}"
+    ansible_ssh_user: "{{ vmss_admin_user }}"
+    host_key_checking: false
+    ansible_python_interpreter: "/usr/bin/python3"
+  with_items:
+    - "{{ output_lb.ansible_info.azure_loadbalancers[0].properties.inboundNatRules }}"
+  no_log: yes

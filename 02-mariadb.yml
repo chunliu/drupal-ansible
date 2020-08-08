@@ -1,0 +1,61 @@
+---
+- hosts: localhost
+  vars:
+    mariadb_admin_username: mdbadmin
+    mariadb_admin_password: "(OL>8ik,)P:?"
+
+  tasks:
+    - name: Create MariaDB server instance
+      azure_rm_mariadbserver:
+        name: "{{ mariadb_name }}"
+        resource_group: "{{ resource_group }}"
+        location: "{{ location }}"
+        sku:
+          name: GP_Gen5_2
+        storage_mb: 5120
+        version: "10.2"
+        admin_username: "{{ mariadb_admin_username }}"
+        admin_password: "{{ mariadb_admin_password }}"
+      register: output_mariadb
+    - name: Create a database for Drupal
+      azure_rm_mariadbdatabase:
+        name: "{{ drupal_db_name }}"
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ mariadb_name }}"
+    - name: Create a firewall rule for all client
+      azure_rm_mariadbfirewallrule:
+        name: "all-client-rule"
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ mariadb_name }}"
+        start_ip_address: "0.0.0.0"
+        end_ip_address: "255.255.255.255"
+    - name: Create a db user for Drupal
+      mysql_user:
+        name: "{{ drupal_db_username }}"
+        host: "%"
+        password: "{{ drupal_dbuser_password }}"
+        login_host: "{{ output_mariadb.fully_qualified_domain_name }}"
+        login_user: "{{ mariadb_admin_username }}@{{ mariadb_name }}"
+        login_password: "{{ mariadb_admin_password }}"
+        priv: "{{ drupal_db_name }}.*:ALL"
+    - name: Create a firewall rule for all client
+      azure_rm_mariadbfirewallrule:
+        name: "all-client-rule"
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ mariadb_name }}"
+        start_ip_address: "0.0.0.0"
+        end_ip_address: "255.255.255.255"
+        state: absent
+
+    - name: Get public ip info
+      azure_rm_publicipaddress_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ lb_pubip_name }}"
+      register: output_pubip
+    - name: Create a firewall rule for vmss
+      azure_rm_mariadbfirewallrule:
+        name: "vmss-rule"
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ mariadb_name }}"
+        start_ip_address: "{{ output_pubip.publicipaddresses[0].ip_address }}"
+        end_ip_address: "{{ output_pubip.publicipaddresses[0].ip_address }}"

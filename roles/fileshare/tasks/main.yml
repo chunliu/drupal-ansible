@@ -1,0 +1,4 @@
+---
+- name: Message from file share role
+  debug:
+    msg: "Hello file share"

@@ -1,0 +1,88 @@
+---
+- hosts: localhost
+  vars:
+    vmss_name: drupal-vmss
+    nsg_name: drupal-nsg
+  tasks:
+    - name: Create public IP address
+      azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: "{{ lb_pubip_name }}"
+    - name: Create Network Security Group that allows SSH
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "{{ nsg_name }}"
+        rules:
+          - name: HTTP
+            protocol: Tcp
+            destination_port_range: 80
+            access: Allow
+            priority: 1000
+            direction: Inbound
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 1001
+            direction: Inbound
+    - name: Create a load balancer
+      azure_rm_loadbalancer:
+        name: "{{ vmss_lb_name }}"
+        location: "{{ location }}"
+        resource_group: "{{ resource_group }}"
+        frontend_ip_configurations:
+        - name: "lb-frontend-ip"
+          public_ip_address: "{{ lb_pubip_name }}"
+        backend_address_pools:
+        - name: "lb-backend-pool"
+        probes:
+        - name: "lb-probe"
+          protocol: Tcp
+          port: 80
+        load_balancing_rules:
+        - name: lb_rule
+          frontend_ip_configuration: "lb-frontend-ip"
+          frontend_port: 80
+          backend_address_pool: "lb-backend-pool"
+          backend_port: 80
+          probe: "lb-probe"
+        inbound_nat_pools:
+        - name: "lb_nat_pools"
+          frontend_ip_configuration_name: "lb-frontend-ip"
+          frontend_port_range_start: 50000
+          frontend_port_range_end: 50040
+          backend_port: 22
+          protocol: Tcp
+    - name: Create Scale Set
+      azure_rm_virtualmachinescaleset:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}"
+        vm_size: Standard_DS1_v2
+        admin_username: "{{ vmss_admin_user }}"
+        admin_password: "{{ vmss_admin_password }}"
+        ssh_password_enabled: false
+        ssh_public_keys: 
+        - path: "/home/{{ vmss_admin_user }}/.ssh/authorized_keys"
+          key_data: "{{ ssh_pubkey_data }}"
+        capacity: 2
+        virtual_network_name: "{{ vnet_name }}"
+        subnet_name: "{{ vmss_subnet_name }}"
+        security_group: "{{ nsg_name }}"
+        upgrade_policy: Manual
+        tier: Standard
+        managed_disk_type: Standard_LRS
+        os_disk_caching: ReadWrite
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: 18.04-LTS
+          version: latest
+        load_balancer: "{{ vmss_lb_name }}"
+    - include: get-hosts-tasks.yml
+
+- name: Enable file share
+  hosts: vmsshosts
+  become: yes
+  roles:
+    - fileshare
