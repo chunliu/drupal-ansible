@@ -79,10 +79,3 @@
           sku: 18.04-LTS
           version: latest
         load_balancer: "{{ vmss_lb_name }}"
-    - include: get-hosts-tasks.yml
-
-- name: Enable file share
-  hosts: vmsshosts
-  become: yes
-  roles:
-    - fileshare

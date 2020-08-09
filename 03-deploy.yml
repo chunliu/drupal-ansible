@@ -1,0 +1,10 @@
+- hosts: localhost
+  tasks:
+  - include: get-hosts-tasks.yml
+
+- name: Deploy all roles
+  hosts: vmsshosts
+  become: yes
+  roles:
+    - fileshare
+    - php

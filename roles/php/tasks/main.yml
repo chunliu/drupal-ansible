@@ -1,0 +1,48 @@
+---
+- name: Update apt packages
+  apt:
+    update_cache: yes
+    upgrade: safe
+    
+- name: Add ondrej/php repository
+  apt_repository: 
+    repo: "ppa:ondrej/php"
+    state: present 
+    update_cache: yes
+- name: Install php7.4 and all modules
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - php7.4
+    - php7.4-fpm 
+    - php7.4-common 
+    - php7.4-mysql 
+    - php7.4-gmp 
+    - php7.4-curl 
+    - php7.4-intl 
+    - php7.4-mbstring 
+    - php7.4-xmlrpc 
+    - php7.4-gd 
+    - php7.4-xml 
+    - php7.4-cli 
+    - php7.4-zip
+- name: Start php7.4-fpm service
+  service:
+    name: php7.4-fpm
+    state: started
+    enabled: yes
+- name: Set timezone in php.ini
+  lineinfile:
+    path: "/etc/php/7.4/fpm/php.ini"
+    regexp: "^;date.timezone"
+    line: date.timezone = Asia/Singapore
+- name: Set memory in php.ini
+  lineinfile:
+    path: "/etc/php/7.4/fpm/php.ini"
+    regexp: "^memory_limit ="
+    line: memory_limit = 256M
+- name: Restart php7.4-fpm
+  service: 
+    name: php7.4-fpm 
+    state: restarted
