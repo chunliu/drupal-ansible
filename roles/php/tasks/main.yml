@@ -1,9 +1,4 @@
 ---
-- name: Update apt packages
-  apt:
-    update_cache: yes
-    upgrade: safe
-    
 - name: Add ondrej/php repository
   apt_repository: 
     repo: "ppa:ondrej/php"

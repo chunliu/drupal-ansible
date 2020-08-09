@@ -1,0 +1,51 @@
+---
+- name: Install mysql-client
+  package:
+    name: mysql-client
+    state: present
+- name: Check composer status
+  stat:
+    path: /usr/local/bin/composer
+  register: composer_stat
+
+- name: Install Composer
+  shell: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer warn=False
+  args:
+    creates: /usr/local/bin/composer
+  when: not composer_stat.stat.exists
+
+- name: Check Drupal project status
+  stat:
+    path: "/var/www/drupal"
+  register: drupal_stat
+
+- name: Create Drupal project with composer
+  shell: composer create-project drupal/recommended-project drupal "8.9.3" --keep-vcs
+  args:
+    chdir: /var/www
+  when: not drupal_stat.stat.exists
+
+- name: Install Drush
+  shell: composer install && composer require drush/drush
+  args:
+    chdir: "/var/www/drupal"
+
+- name: Check drupal installation status
+  stat:
+    path: /var/www/drupal/web/sites/default/files/js
+  register: site_stat
+
+- name: Copy drupal installation script
+  copy:
+    src: installdrupal.sh
+    dest: "/home/{{ vmss_admin_user }}/installdrupal.sh"
+    mode: "0755"
+
+- name: Run the installation script
+  shell: "/home/{{ vmss_admin_user }}/installdrupal.sh 'My Drupal Site' {{ drupal_admin_username }} {{ drupal_admin_password }} 'mysql://{{ drupal_db_username }}@{{ mariadb_name }}:{{ drupal_dbuser_password }}@{{ mariadb_fqdb.servers[0].fully_qualified_domain_name }}/{{ drupal_db_name }}'"
+  when: not site_stat.stat.exists
+  register: shell_result
+- name: Dump script output
+  debug:
+    var: shell_result.stdout_lines
+  

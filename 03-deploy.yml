@@ -11,8 +11,7 @@
   hosts: vmsshosts
   become: yes
   roles:
-    - fileshare
     - php
-    - nginx
-    # - role: drupal
-    #   mariadb_fqdb: "{{ hostvars['localhost']['output_mariadb'] }}"
+    # - nginx
+    - role: drupal
+      mariadb_fqdb: "{{ hostvars['localhost']['output_mariadb'] }}"

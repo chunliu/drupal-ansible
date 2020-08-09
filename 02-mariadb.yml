@@ -38,7 +38,7 @@
         login_user: "{{ mariadb_admin_username }}@{{ mariadb_name }}"
         login_password: "{{ mariadb_admin_password }}"
         priv: "{{ drupal_db_name }}.*:ALL"
-    - name: Create a firewall rule for all client
+    - name: Remove the firewall rule for all client
       azure_rm_mariadbfirewallrule:
         name: "all-client-rule"
         resource_group: "{{ resource_group }}"
