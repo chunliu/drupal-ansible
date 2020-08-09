@@ -1,0 +1,34 @@
+---
+- name: Disable apache service
+  service:
+    name: apache2
+    state: stopped
+    enabled: no
+- name: Remove apache
+  package:
+    name: apache2
+    state: absent
+- name: Install nginx
+  package:
+    name: nginx
+    state: present
+- name: Start and enable nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+- name: Remove the default nginx configuration
+  file:
+    name: /etc/nginx/sites-enabled/default
+    state: absent
+  notify:
+    - restart nginx
+- name: generate a new configuration for Drupal
+  template:
+    src: drupal.conf
+    dest: /etc/nginx/sites-enabled/drupal.conf
+    owner: www-data
+    group: www-data
+  notify:
+    - restart nginx
+- meta: flush_handlers

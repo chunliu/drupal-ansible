@@ -2,7 +2,7 @@
 - name: Update all packages
   apt:
     update_cache: yes
-    upgrade: yes
+    upgrade: safe
 - name: Install cifs-utils
   package:
     name: cifs-utils

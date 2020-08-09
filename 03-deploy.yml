@@ -1,6 +1,11 @@
 - hosts: localhost
   tasks:
   - include: get-hosts-tasks.yml
+  - name: Get Maria DB info
+    azure_rm_mariadbserver_info:
+      resource_group: "{{ resource_group }}"
+      name: "{{ mariadb_name }}"
+    register: output_mariadb
 
 - name: Deploy all roles
   hosts: vmsshosts
@@ -8,3 +13,6 @@
   roles:
     - fileshare
     - php
+    - nginx
+    # - role: drupal
+    #   mariadb_fqdb: "{{ hostvars['localhost']['output_mariadb'] }}"
