@@ -11,9 +11,6 @@
   copy:
     src: mountazfile.sh
     dest: "/home/{{ vmss_admin_user }}/mountazfile.sh"
-- name: Change the permission of the script
-  file:
-    path: "/home/{{ vmss_admin_user }}/mountazfile.sh"
-    mode: 0755
+    mode: "0755"
 - name: Mount the file share
   shell: "/home/{{ vmss_admin_user }}/mountazfile.sh {{ storage_account }} {{ fileshare_name }} {{ storage_account_key }}"
