@@ -17,6 +17,7 @@
     name: nginx
     state: started
     enabled: yes
+
 - name: Remove the default nginx sites-enabled
   file:
     name: /etc/nginx/sites-enabled/default
@@ -25,8 +26,12 @@
   file:
     name: /etc/nginx/sites-available/default
     state: absent
-  notify:
-    - restart nginx
+- name: Start and enable nginx service
+  service:
+    name: nginx
+    state: restarted
+    enabled: yes
+
 - name: Generate a new sites-available for Drupal
   template:
     src: drupal.conf
@@ -38,7 +43,10 @@
     src: /etc/nginx/sites-available/drupal.conf
     dest: /etc/nginx/sites-enabled/drupal.conf
     state: link
-  notify:
-    - restart nginx
-- name: Flush handlers
-  meta: flush_handlers
+    owner: www-data
+    group: www-data
+- name: Start and enable nginx service
+  service:
+    name: nginx
+    state: restarted
+    enabled: yes

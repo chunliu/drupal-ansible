@@ -11,7 +11,8 @@
   hosts: vmsshosts
   become: yes
   roles:
+    - gfs_client
     - php
-    # - nginx
     - role: drupal
       mariadb_fqdb: "{{ hostvars['localhost']['output_mariadb'] }}"
+    - nginx

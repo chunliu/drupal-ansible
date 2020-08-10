@@ -25,14 +25,20 @@
     chdir: /var/www
   when: not drupal_stat.stat.exists
 
+- name: Check Drush installation
+  stat:
+    path: /var/www/drupal/vendor/drush/drush/drush
+  register: drush_stat
+
 - name: Install Drush
   shell: composer install && composer require drush/drush
   args:
     chdir: "/var/www/drupal"
+  when: not drush_stat.stat.exists
 
 - name: Check drupal installation status
   stat:
-    path: /var/www/drupal/web/sites/default/files/js
+    path: /var/www/drupal/web/sites/default/files/styles
   register: site_stat
 
 - name: Copy drupal installation script
@@ -42,10 +48,28 @@
     mode: "0755"
 
 - name: Run the installation script
-  shell: "/home/{{ vmss_admin_user }}/installdrupal.sh 'My Drupal Site' {{ drupal_admin_username }} {{ drupal_admin_password }} 'mysql://{{ drupal_db_username }}@{{ mariadb_name }}:{{ drupal_dbuser_password }}@{{ mariadb_fqdb.servers[0].fully_qualified_domain_name }}/{{ drupal_db_name }}'"
+  shell: "/home/{{ vmss_admin_user }}/installdrupal.sh 'Drupal on VMSS' {{ drupal_admin_username }} {{ drupal_admin_password }} 'mysql://{{ drupal_db_username }}@{{ mariadb_name }}:{{ drupal_dbuser_password }}@{{ mariadb_fqdb.servers[0].fully_qualified_domain_name }}/{{ drupal_db_name }}'"
   when: not site_stat.stat.exists
   register: shell_result
 - name: Dump script output
   debug:
     var: shell_result.stdout_lines
-  
+
+- name: set proper ownership
+  file:
+    path: "/var/www/drupal"
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: set permissions on the settings file
+  file:
+    path: "/var/www/drupal/web/sites/default/settings.php"
+    mode: "0744"
+
+- name: set permissions on files direcotry
+  file:
+    path: "/var/www/drupal/web/sites/default/files"
+    mode: "0777"
+    state: directory
+    recurse: yes

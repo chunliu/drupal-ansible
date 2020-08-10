@@ -1,0 +1,36 @@
+---
+- name: Update all packages
+  apt:
+    update_cache: yes
+    upgrade: safe
+- name: Add GlusterFS repository
+  apt_repository: 
+    repo: ppa:gluster/glusterfs-7
+    state: present
+    update_cache: yes
+- name: Install glusterfs-client
+  package:
+    name: glusterfs-client
+    state: present
+
+- name: Create directory for drupal site
+  file:
+    path: /gfstorage
+    state: directory
+
+- name: Check if the volume has been mounted
+  stat:
+    path: /gfstorage/mounted
+  register: gfs_stat
+
+- name: Mount the gfs volume
+  shell: |
+    echo "gfs-server01:/gfsvol1 /gfstorage glusterfs defaults,_netdev 0 0" | tee -a /etc/fstab
+    mount -a
+    touch /gfstorage/mounted
+  when: not gfs_stat.stat.exists
+
+- name: Create directory for drupal site
+  file:
+    path: /gfstorage/drupalsite
+    state: directory

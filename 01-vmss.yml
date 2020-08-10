@@ -60,7 +60,6 @@
         name: "{{ vmss_name }}"
         vm_size: Standard_DS1_v2
         admin_username: "{{ vmss_admin_user }}"
-        admin_password: "{{ vmss_admin_password }}"
         ssh_password_enabled: false
         ssh_public_keys: 
         - path: "/home/{{ vmss_admin_user }}/.ssh/authorized_keys"

@@ -1,0 +1,65 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Create public IP address for jumpbox
+      azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: gfs-client_pubip
+      register: output_gfs_pubip
+    - name: Create Network Security Group that allows SSH
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: gfs-nsg
+        rules:
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 1001
+            direction: Inbound
+    - name: Create virtual network interface card
+      azure_rm_networkinterface:
+        resource_group: "{{ resource_group }}"
+        name: gfs-client-nic
+        virtual_network: "{{ vnet_name }}"
+        subnet: "{{ gfs_subnet_name }}"
+        public_ip_name: gfs-client_pubip
+        security_group: gfs-nsg
+    - name: Create a VM for gfs-client
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        name: gfs-client
+        vm_size: Standard_DS1_v2
+        admin_username: "{{ gfs_admin_username }}"
+        ssh_password_enabled: no
+        ssh_public_keys: 
+        - path: "/home/{{ gfs_admin_username }}/.ssh/authorized_keys"
+          key_data: "{{ ssh_pubkey_data }}"
+        managed_disk_type: Standard_LRS
+        network_interfaces: gfs-client-nic
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: 18.04-LTS
+          version: latest
+# TODO: Create glusterfs servers and setup the volume
+    # - name: Create VMs for gfs-server
+    #   azure_rm_virtualmachine:
+    #     resource_group: "{{ resource_group }}"
+    #     name: gfs-client
+    #     vm_size: Standard_DS1_v2
+    #     admin_username: "{{ gfs_admin_username }}"
+    #     ssh_password_enabled: no
+    #     ssh_public_keys: 
+    #     - path: "/home/{{ gfs_admin_username }}/.ssh/authorized_keys"
+    #       key_data: "{{ ssh_pubkey_data }}"
+    #     managed_disk_type: Standard_LRS
+    #     image:
+    #       offer: UbuntuServer
+    #       publisher: Canonical
+    #       sku: 18.04-LTS
+    #       version: latest
+    #     with_items:
+    #       - gfs-server01
+    #       - gfs-server02
