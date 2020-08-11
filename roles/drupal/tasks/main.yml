@@ -48,7 +48,7 @@
     mode: "0755"
 
 - name: Run the installation script
-  shell: "/home/{{ vmss_admin_user }}/installdrupal.sh 'Drupal on VMSS' {{ drupal_admin_username }} {{ drupal_admin_password }} 'mysql://{{ drupal_db_username }}@{{ mariadb_name }}:{{ drupal_dbuser_password }}@{{ mariadb_fqdb.servers[0].fully_qualified_domain_name }}/{{ drupal_db_name }}'"
+  shell: "/home/{{ vmss_admin_user }}/installdrupal.sh 'drupal-on-vmss' {{ drupal_admin_username }} {{ drupal_admin_password }} 'mysql://{{ drupal_db_username }}@{{ mariadb_name }}:{{ drupal_dbuser_password }}@{{ mariadb_fqdb.servers[0].fully_qualified_domain_name }}/{{ drupal_db_name }}'"
   when: not site_stat.stat.exists
   register: shell_result
 - name: Dump script output

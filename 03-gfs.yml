@@ -1,12 +1,17 @@
 ---
 - hosts: localhost
+  vars:
+    gfs_server_01: "{{ gfs_server_name_prefix }}01"
   tasks:
-    - name: Create public IP address for jumpbox
+    - name: Create public IP address
       azure_rm_publicipaddress:
         resource_group: "{{ resource_group }}"
         allocation_method: Static
-        name: gfs-client_pubip
-      register: output_gfs_pubip
+        name: "{{ item }}"
+      loop:
+        - "{{ gfs_server_name_prefix }}01-pubip"
+        - "{{ gfs_server_name_prefix }}02-pubip"
+
     - name: Create Network Security Group that allows SSH
       azure_rm_securitygroup:
         resource_group: "{{ resource_group }}"
@@ -18,18 +23,25 @@
             access: Allow
             priority: 1001
             direction: Inbound
+
     - name: Create virtual network interface card
       azure_rm_networkinterface:
         resource_group: "{{ resource_group }}"
-        name: gfs-client-nic
+        name: "{{ item.nic_name }}"
         virtual_network: "{{ vnet_name }}"
         subnet: "{{ gfs_subnet_name }}"
-        public_ip_name: gfs-client_pubip
         security_group: gfs-nsg
-    - name: Create a VM for gfs-client
+        ip_configurations:
+        - name: "{{ item.nic_name }}_ipcfg"
+          public_ip_address_name: "{{ item.pub_ip }}"
+      loop:
+        - {nic_name: "{{ gfs_server_name_prefix }}01-nic", pub_ip: "{{ gfs_server_name_prefix }}01-pubip"}
+        - {nic_name: "{{ gfs_server_name_prefix }}02-nic", pub_ip: "{{ gfs_server_name_prefix }}02-pubip"}
+
+    - name: Create VMs for gfs-server
       azure_rm_virtualmachine:
         resource_group: "{{ resource_group }}"
-        name: gfs-client
+        name: "{{ item.server_name }}"
         vm_size: Standard_DS1_v2
         admin_username: "{{ gfs_admin_username }}"
         ssh_password_enabled: no
@@ -37,29 +49,64 @@
         - path: "/home/{{ gfs_admin_username }}/.ssh/authorized_keys"
           key_data: "{{ ssh_pubkey_data }}"
         managed_disk_type: Standard_LRS
-        network_interfaces: gfs-client-nic
+        network_interfaces: "{{ item.nic_name }}"
         image:
           offer: UbuntuServer
           publisher: Canonical
           sku: 18.04-LTS
           version: latest
-# TODO: Create glusterfs servers and setup the volume
-    # - name: Create VMs for gfs-server
-    #   azure_rm_virtualmachine:
-    #     resource_group: "{{ resource_group }}"
-    #     name: gfs-client
-    #     vm_size: Standard_DS1_v2
-    #     admin_username: "{{ gfs_admin_username }}"
-    #     ssh_password_enabled: no
-    #     ssh_public_keys: 
-    #     - path: "/home/{{ gfs_admin_username }}/.ssh/authorized_keys"
-    #       key_data: "{{ ssh_pubkey_data }}"
-    #     managed_disk_type: Standard_LRS
-    #     image:
-    #       offer: UbuntuServer
-    #       publisher: Canonical
-    #       sku: 18.04-LTS
-    #       version: latest
-    #     with_items:
-    #       - gfs-server01
-    #       - gfs-server02
+      loop:
+        - {server_name: "{{ gfs_server_name_prefix }}01", nic_name: "{{ gfs_server_name_prefix }}01-nic"}
+        - {server_name: "{{ gfs_server_name_prefix }}02", nic_name: "{{ gfs_server_name_prefix }}02-nic"}
+
+    - name: Get NIC facts for gfs server 01
+      azure_rm_publicipaddress_info:
+        name: "{{ gfs_server_name_prefix }}01-pubip"
+        resource_group: "{{ resource_group }}"
+      register: svr01_pubip_info
+
+    - name: Get NIC facts for gfs server 02
+      azure_rm_publicipaddress_info:
+        name: "{{ gfs_server_name_prefix }}02-pubip"
+        resource_group: "{{ resource_group }}"
+      register: svr02_pubip_info
+    
+    - name: Add host for gfs server 01
+      add_host:
+        hostname: "{{ item.server_name }}"
+        groups: gfsservers
+        ansible_host: "{{ item.pubip }}"
+        ansible_port: 22
+        ansible_ssh_user: "{{ gfs_admin_username }}"
+        host_key_checking: false
+        ansible_python_interpreter: "/usr/bin/python3"
+      loop:
+        - {server_name: "{{ gfs_server_name_prefix }}01", pubip: "{{ svr01_pubip_info.publicipaddresses[0].ip_address }}"}
+        - {server_name: "{{ gfs_server_name_prefix }}02", pubip: "{{ svr02_pubip_info.publicipaddresses[0].ip_address }}"}
+
+- name: Configure GlusterFS servers
+  hosts: gfsservers
+  become: yes
+  roles:
+    - gfs_server
+
+- name: Configure GlusterFS volume on gfs server 01
+  hosts: gfsservers[0]
+  become: yes
+  tasks:
+    - name: Gluster peer probe
+      shell: "gluster peer probe {{ gfs_server_name_prefix }}02"
+    - name: Gluster check volume status
+      shell: gluster volume status
+      register: shell_result 
+    - name: Gluster create volume
+      shell: "gluster volume create {{ gfs_volume_name }} replica 2 {{ gfs_server_name_prefix }}01:/gluster-storage {{ gfs_server_name_prefix }}02:/gluster-storage force"
+      when: shell_result.stderr.find("No volumes present") != -1
+    - name: Gluster start the volume
+      shell: "gluster volume start {{ gfs_volume_name }}"
+    - name: Gluster check volume status
+      shell: "gluster volume status"
+      register: shell_result
+    - name: Dump shell result
+      debug:
+        var: shell_result

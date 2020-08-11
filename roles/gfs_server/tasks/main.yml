@@ -1,0 +1,14 @@
+---
+- name: Update all packages
+  apt:
+    update_cache: yes
+    upgrade: safe
+- name: Add GlusterFS repository
+  apt_repository: 
+    repo: ppa:gluster/glusterfs-7
+    state: present
+    update_cache: yes
+- name: Install GlusterFS server
+  package:
+    name: glusterfs-server
+    state: present

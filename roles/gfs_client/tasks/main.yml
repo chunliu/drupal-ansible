@@ -25,7 +25,7 @@
 
 - name: Mount the gfs volume
   shell: |
-    echo "gfs-server01:/gfsvol1 /gfstorage glusterfs defaults,_netdev 0 0" | tee -a /etc/fstab
+    echo "{{ gfs_server_name_prefix }}01:/{{gfs_volume_name}} /gfstorage glusterfs defaults,_netdev 0 0" | tee -a /etc/fstab
     mount -a
     touch /gfstorage/mounted
   when: not gfs_stat.stat.exists

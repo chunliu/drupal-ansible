@@ -55,7 +55,7 @@ if [ "$IS_FIRST_NODE" = true ]; then
     cd $DRUPAL_ROOT
     echo "start to install drupal site."
     echo "start to install drupal site." >> $SHARED_ROOT/drupal.lock
-    ../vendor/drush/drush/drush si standard -y --site-name="$SITE_NAME" --account-name="$ACCOUNT_NAME" --account-pass="$ACCOUNT_PASS" --db-url="$DB_URL"
+    ../vendor/drush/drush/drush si standard -y --site-name=$SITE_NAME --account-name=$ACCOUNT_NAME --account-pass=$ACCOUNT_PASS --db-url=$DB_URL
     echo "drupal site created."
     echo "drupal site created." >> $SHARED_ROOT/drupal.lock
     touch $SHARED_ROOT/firstnode.done
