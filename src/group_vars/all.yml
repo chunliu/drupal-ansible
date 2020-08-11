@@ -1,0 +1,22 @@
+---
+# Azure variables
+resource_group: drupal-rg
+location: southeastasia
+vnet_name: drupal-vnet
+vmss_subnet_name: vmss-subnet
+gfs_subnet_name: gfs-subnet
+ssh_pubkey_data: "ssh-pubkey"
+lb_pubip_name: "drupal-lb-pubip"
+vmss_lb_name: drupal-lb
+vmss_admin_user: vmssadmin
+# GlusterFS variables
+gfs_admin_username: "gfsadmin"
+gfs_server_name_prefix: "gfs-svr"
+gfs_volume_name: gfsvol1
+# Maria DB variables
+mariadb_name: azmariadbinst1
+drupal_db_name: drupaldb
+drupal_db_username: drupaluser
+drupal_dbuser_password: "drupaluser_password"
+drupal_admin_username: drupal_admin
+drupal_admin_password: "drupaladmin_password"
