@@ -7,7 +7,7 @@ The Ansible playbooks in this repo helps to automatically deploy a testing envir
 The playbooks deploy and configure the following components and services.
 
 - A virtual network with 2 subnets, one for VMSS and another for GlusterFS cluster.
-- A 2 nodes GlusterFS cluster.
+- A 2 nodes [GlusterFS](https://docs.gluster.org/en/latest/) cluster.
 - An Azure Database for MariaDB.
 - A VMSS with a load balancer. The servers in VMSS are configured with the following roles:
   - GlusterFS client with the gluster volume mounted.
@@ -19,10 +19,10 @@ The diagram below shows how the deployed environment would look like.
 
 ## How to use it
 
-- Configure your Ansible control node to work with Azure. See this [Document](https://docs.microsoft.com/azure/developer/ansible/install-on-linux-vm).
+- Configure your Ansible control node to work with Azure. See this [document](https://docs.microsoft.com/azure/developer/ansible/install-on-linux-vm).
 - On the Ansible control node, `git clone https://github.com/chunliu/drupal-vmss-ansible.git`.
 - Update the value of variables in `src/group_vars/all.yml`.
-- Run the playbooks one by one with `ansible-playbook`.
+- Run the playbooks one by one following the sequence with `ansible-playbook`.
 
 ## Credits
 
