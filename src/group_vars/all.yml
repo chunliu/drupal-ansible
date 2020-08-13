@@ -15,6 +15,8 @@ gfs_server_name_prefix: "gfs-svr"
 gfs_volume_name: gfsvol1
 # Maria DB variables
 mariadb_name: azmariadbinst1
+mariadb_admin_username: mdbadmin
+mariadb_admin_password: "dbadmin_password"
 drupal_db_name: drupaldb
 drupal_db_username: drupaluser
 drupal_dbuser_password: "drupaluser_password"

@@ -1,9 +1,5 @@
 ---
 - hosts: localhost
-  vars:
-    mariadb_admin_username: mdbadmin
-    mariadb_admin_password: "(OL>8ik,)P:?"
-
   tasks:
     - name: Create MariaDB server instance
       azure_rm_mariadbserver:
